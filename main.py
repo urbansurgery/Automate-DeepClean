@@ -2,7 +2,7 @@
 
 use the automation_context module to wrap your function in an Automate context helper
 """
-from typing import cast
+from typing import cast, List, Dict
 
 from pydantic import Field
 from speckle_automate import (
@@ -12,6 +12,9 @@ from speckle_automate import (
 )
 from specklepy.objects import Base
 from specklepy.objects.graph_traversal.traversal import TraversalRule, GraphTraversal
+
+from Rules.actions import ParameterAction, PrefixRemovalAction, MissingValueReportAction
+from Rules.rules import ParameterRules
 
 
 class FunctionInputs(AutomateBase):
@@ -34,97 +37,64 @@ def automate_function(
         automate_context: AutomationContext,
         function_inputs: FunctionInputs,
 ) -> None:
-    """This is an example Speckle Automate function.
+    """
+    Main function for the Speckle Automation.
+
+    This function receives the Speckle data, applies a series of checks
+    and actions on it, and then reports the results.
 
     Args:
-        automate_context: A context helper object, that carries relevant information
-            about the runtime context of this function.
-            It gives access to the Speckle project data, that triggered this run.
-            It also has convenience methods attach result data to the Speckle model.
-        function_inputs: An instance object matching the defined schema.
+        automate_context: Context with helper methods for Speckle Automate.
+        function_inputs: User-defined inputs for the automation.
     """
-    # the context provides a convenient way, to receive the triggering version
-    if (
-            not function_inputs.forbidden_parameter_prefix
-            or function_inputs.forbidden_parameter_prefix == ""
-    ):
+    if not function_inputs.forbidden_parameter_prefix:
         automate_context.mark_run_failed("No prefix has been set.")
         return
 
     version_root_object = automate_context.receive_version()
 
-    func = get_default_traversal_func()
+    # Traverse the received Speckle data.
+    speckle_data = get_data_traversal()
+    traversal_contexts_collection = speckle_data.traverse(version_root_object)
 
-    traversal_collection_contexts = func.traverse(version_root_object)
+    # Checking rules
+    is_revit_parameter = ParameterRules.speckle_type_rule("Objects.BuiltElements.Revit.Parameter")
+    has_forbidden_prefix = ParameterRules.forbidden_prefix_rule(function_inputs.forbidden_parameter_prefix)
 
-    cleansed_objects = {}
+    # Actions
+    removal_action = PrefixRemovalAction(function_inputs.forbidden_parameter_prefix)
 
-    for context in traversal_collection_contexts:
-        current = context.current
-        if hasattr(current, "parameters"):
-            parameters = cast(Base, current.parameters)
+    # Iterate over each context in the traversal contexts collection.
+    # Each context represents an object (or a nested part of an object) within
+    # the data structure that was traversed.
+    # The goal of this loop is to identify and act upon parameters of the objects
+    # that meet certain criteria (e.g., being a Revit parameter with a forbidden prefix).
+    for context in traversal_contexts_collection:
+        current_object = context.current
+        if hasattr(current_object, "parameters"):
+            parameters = cast(Base, current_object.parameters)
 
             if parameters is None:
                 continue
 
-            parameter_keys = parameters.get_dynamic_member_names()
-
-            for parameter_key in parameter_keys:
+            for parameter_key in parameters.get_dynamic_member_names():
                 parameter = cast(Base, parameters.__getitem__(f"{parameter_key}"))
 
-                if not parameter.of_type("Objects.BuiltElements.Revit.Parameter"):
-                    continue
+                if is_revit_parameter(parameter) and has_forbidden_prefix(parameter):
+                    removal_action.apply(parameter, current_object)
 
-                if parameter["name"].startswith(
-                        function_inputs.forbidden_parameter_prefix
-                ):
-                    # Base objects doesn't support the delitem method
-                    parameters.__dict__.pop(parameter_key)
+    # Generate reports for all actions.
+    for action in [removal_action]:
+        action.report(automate_context)
 
-                    # update the list of parameters cleansed from the current object
-                    # by updating the cleansed_objects dict
-                    if current.id in cleansed_objects:
-                        cleansed_objects[current.id].append(parameter_key)
-                    else:
-                        cleansed_objects[current.id] = [parameter_key]
-
-    # if no objects were cleansed, we can just return an automate context report of run success
-
-    if len(cleansed_objects) == 0:
-        automate_context.mark_run_success("No parameters were cleansed.")
-        return
-
-    # if we get here, we have cleansed objects, so we can create a new version
-    # and also attach a report to all the objects that were cleansed
-    new_version_id = automate_context.create_new_version_in_project(
-        version_root_object,
-        "cleansed",
-        "This version has been cleansed of parameters with the prefix '"
-    )
-
-    if new_version_id is None:
-        automate_context.mark_run_failed("Failed to create new version.")
-        return
-
-    # attach the report to all the cleansed objects
-    automate_context.attach_info_to_objects(
-        category="Cleansed_parameters",
-        object_ids=list(cleansed_objects.keys()),
-        message="The following parameters were cleansed: " + ", ".join(
-            list(set(sum([parameter_names for parameter_names in cleansed_objects.values()], []))))
-    )
-
-    # if we get here, we have a new version id, so we can attach the cleansed objects to the new version
-    automate_context.mark_run_success("Successfully cleansed parameters.")
+    # Final summary.
+    automate_context.mark_run_success("Actions applied and reports generated.")
 
 
-# traverse the root object and if a revit parameter has the prefix, remove it
-# this is a recursive function
-
-
-def get_default_traversal_func() -> GraphTraversal:
+def get_data_traversal() -> GraphTraversal:
     """
-    Traversal func for traversing a speckle commit object
+    This function is responsible for navigating through the Speckle data
+    hierarchy and providing contexts to be checked and acted upon.
     """
     display_value_property_aliases = {"displayValue", "@displayValue"}
     elements_property_aliases = {"elements", "@elements"}

@@ -1,73 +1,96 @@
-# Speckle Automate function template - Python
+# Speckle Automate Function: Data Validation in AEC
 
+This repository provides a Speckle Automate function crafted specifically for the AEC industry, demonstrating the power
+of data validation using the `specklepy` SDK.
 
-This is a template repository for a Speckle Automate functions written in python
-using the [specklepy](https://pypi.org/project/specklepy/) SDK to interact with Speckle data.
+Our function showcases both loose and tight coupling methodologies between check rules (conditions we validate) and
+actions (responses based on conditions). This balance ensures adaptability and reliability in our validation framework.
 
-This template contains the full scaffolding required to publish a function to the automate environment.
-Also has some sane defaults for a development environment setups.
+## Getting Started
 
-## Getting started
+1. **Use this Template**: Click on "Use this template" to create a new repository with this structure.
 
-1. Use this template repository to create a new repository in your own / organization's profile.
+2. **Register the Function**: [Describe how to register the function with Speckle.]
 
-Register the function 
+3. **Add Dependencies**: Use `$ poetry add [package_name]` to add new Python package dependencies.
 
-### Add new dependencies
+4. **Edit Launch Variables**: [Briefly describe how the `launch.json` should be edited for custom configurations.]
 
-To add new python package dependencies to the project, use:
-`$ poetry add pandas`
+5. **Local Development**: For a local dev setup, [provide steps].
 
-### Change launch variables
+6. **GitHub Codespaces**: Quickly set up a dev environment using GitHub Codespaces.
 
-describe how the launch.json should be edited
+## How the Validation Works
 
-### Github Codespaces
+In the AEC domain, data validation isn't merely about ensuring data integrity. It's about comprehending the intricate
+relationships between data points, especially when diving into BIM (Building Information Modelling). This function
+demonstrates the traversal through and manipulation of this complex web of relationships while preserving the integrity
+of the overall data structure.
 
-create new repo from template, and use the create new code
+### Check Rules and Actions: The Core Framework
 
+Our system's core is the dynamic relationship between check rules (conditions we validate against) and actions (
+operations we conduct based on these conditions). This relationship can be:
 
-### Local dev environment
+- **Loosely Coupled**: In this method, checks and actions remain modular and distinct. This flexibility allows checks to
+  be paired with diverse actions depending on specific needs.
 
+- **Tightly Coupled**: Here, specific checks are intrinsically linked to distinct actions. This ensures a predictable
+  validation trajectory.
 
+Our function manifests both methods. While the `ParameterRules` class provides modular checks, the subclasses
+of `ParameterAction`, such as `PrefixRemovalAction`, embrace the tight coupling principle, offering specific responses
+to set conditions.
 
+### Traversal Rule Pattern: Navigating Complex Data Structures
 
-# Archive
+The traversal methodology found in both the speckle-sharp and specklepy SDKs, which we refer to as the `TraversalRule`
+pattern, is integral to our validation process. Its utility is manifold:
 
-This is a simple example of how to use the Speckle Automate Python package to automate the creation of a Speckle stream.
+1. **Preserve Hierarchical Relationships**: BIM data is all about hierarchy - a door hosted by a wall, situated in a
+   room, and so on. Using the traversal methodology, while elements can be changed, their relationships with other
+   elements stay intact.
 
+2. **In-place Data Mutation**: Rather than spawning entirely new data structures, the traversal method champions
+   in-place data mutation. This approach is not only efficient but also minimizes data loss risks.
+
+3. **Maintain Original Constructs**: This becomes pivotal when examining elements like family instances in Revit. A
+   single alteration can ripple through the data. The traversal methodology ensures that while data undergoes validation
+   or changes, original structural relationships are upheld.
+
+### Zooming Out: The Broader Perspective
+
+In the AEC landscape, data validation transcends data integrity; it's about safeguarding relationships and data
+hierarchies. With a robust blend of check rules, actions, and the traversal methodology, our function stands as a
+testament to handling intricate AEC data with finesse, balancing both data accuracy and structural authenticity.
 
 ## Using this Speckle Function
 
-1. [Create](https://automate.speckle.dev/) a new Speckle Automation.
-1. Select your Speckle Project and Speckle Model.
-1. Select the existing Speckle Function named [`Random comment on IFC beam`](https://automate.speckle.dev/functions/e110be8fad).
-1. Enter a phrase to use in the comment.
-1. Click `Create Automation`.
+1. **Create a New Speckle Automation**: Navigate to the Speckle dashboard.
 
-## Getting Started with creating your own Speckle Function
+2. **Select the Speckle Project & Model**: Choose the relevant project and model.
 
-1. [Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) this repository.
-1. [Clone](https://docs.github.com/en/get-started/quickstart/fork-a-repo#cloning-your-forked-repository) your forked repository to your development environment, or use [GitHub CodeSpaces](https://github.com/features/codespaces).
-1. [Register](https://automate.speckle.dev/) your Function with [Speckle Automate](https://automate.speckle.dev/).
-1. After completing the registration of the Function you will be shown a Function Publish Token and a Function ID. You will need these later.
-1. Save your Function Publish Token as a [GitHub Action Secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) named `SPECKLE_AUTOMATE_FUNCTION_PUBLISH_TOKEN`.
-1. Save your Function ID as a [GitHub Action Secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) named `SPECKLE_AUTOMATE_FUNCTION_ID`.
-1. Make changes to your Function in `main.py`. See below for the Developer Requirements, and instructions on how to test.
-1. Every commit to `main` branch will create a new version of your Speckle Function.
+3. **Select the Function**: Opt for the function named "Data Validation in AEC."
 
-## Developer Requirements
+4. **Configure & Create**: Adjust settings as needed and click "Create Automation."
 
-1. Install the following:
-    - [Python 3](https://www.python.org/downloads/)
-    - [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
-1. Run `poetry shell && poetry install` to install the required Python packages.
+## Develop Your Own Speckle Function
 
-## Building and Testing
+1. **Fork & Clone**: Fork this repository and clone it or use GitHub CodeSpaces.
 
-The code can be tested locally by running `poetry run pytest`.
-The code should also be packaged into the format required by Speckle Automate, a Docker Container Image, and that should also be tested.
+2. **Function Registration**: After registration, save the Function Publish Token and ID as GitHub Action Secrets.
+
+3. **Edit**: Make modifications in `main.py`.
+
+4. **Automatic Versioning**: Every commit to the main branch auto-creates a new version.
+
+## Developer Setup
+
+- **Requirements**: Install Python 3 and Poetry. Run `poetry shell && poetry install` for required packages.
+
+- **Building & Testing**: Test locally using `poetry run pytest`. Also, package the code as a Docker Container Image for
+  Speckle Automate.
 
 ## Resources
 
-- [Learn](https://speckle.guide/dev/python.html) more about SpecklePy, and interacting with Speckle from Python.
+- **SpecklePy**: Dive deeper into `SpecklePy` and harness the power of Speckle from Python.
