@@ -2,7 +2,7 @@
 
 use the automation_context module to wrap your function in an Automate context helper
 """
-from typing import Callable, cast
+from typing import cast
 
 from pydantic import Field
 from speckle_automate import (
@@ -57,10 +57,16 @@ def automate_function(
 
     traversal_collection_contexts = func.traverse(version_root_object)
 
+    cleansed_objects = {}
+
     for context in traversal_collection_contexts:
         current = context.current
         if hasattr(current, "parameters"):
             parameters = cast(Base, current.parameters)
+
+            if parameters is None:
+                continue
+
             parameter_names = parameters.get_dynamic_member_names()
 
             for parameter_name in parameter_names:
@@ -70,11 +76,41 @@ def automate_function(
                     # Base objects doesn't support the delitem method
                     parameters.__dict__.pop(parameter_name)
 
-    automate_context.create_new_version_in_project(
+                    # update the list of parameters cleansed from the current object
+                    # by updating the cleansed_objects dict
+                    if current.id in cleansed_objects:
+                        cleansed_objects[current.id].append(parameter_name)
+                    else:
+                        cleansed_objects[current.id] = [parameter_name]
+
+    # if no objects were cleansed, we can just return an automate context report of run success
+
+    if len(cleansed_objects) == 0:
+        automate_context.mark_run_success("No parameters were cleansed.")
+        return
+
+    # if we get here, we have cleansed objects, so we can create a new version
+    # and also attach a report to all the objects that were cleansed
+    new_version_id = automate_context.create_new_version_in_project(
         version_root_object,
         "cleansed",
         "This version has been cleansed of parameters with the prefix '"
     )
+
+    if new_version_id is None:
+        automate_context.mark_run_failed("Failed to create new version.")
+        return
+
+    # attach the report to all the cleansed objects
+    automate_context.attach_info_to_objects(
+        category="Cleansed_parameters",
+        object_ids=list(cleansed_objects.keys()),
+        message="The following parameters were cleansed: " + ", ".join(
+            list(set(sum([parameter_names for parameter_names in cleansed_objects.values()], []))))
+    )
+
+    # if we get here, we have a new version id, so we can attach the cleansed objects to the new version
+    automate_context.mark_run_success("Successfully cleansed parameters.")
 
 
 # traverse the root object and if a revit parameter has the prefix, remove it
@@ -85,18 +121,17 @@ def get_default_traversal_func() -> GraphTraversal:
     """
     Traversal func for traversing a speckle commit object
     """
-
-    DISPLAY_VALUE_PROPERTY_ALIASES = {"displayValue", "@displayValue"}
-    ELEMENTS_PROPERTY_ALIASES = {"elements", "@elements"}
+    display_value_property_aliases = {"displayValue", "@displayValue"}
+    elements_property_aliases = {"elements", "@elements"}
 
     display_value_rule = TraversalRule(
         [
             lambda o: any(
-                getattr(o, alias, None) for alias in DISPLAY_VALUE_PROPERTY_ALIASES
+                getattr(o, alias, None) for alias in display_value_property_aliases
             ),
             lambda o: "Geometry" in o.speckle_type,
         ],
-        lambda o: ELEMENTS_PROPERTY_ALIASES,
+        lambda o: elements_property_aliases,
     )
 
     default_rule = TraversalRule(
