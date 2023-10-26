@@ -67,21 +67,26 @@ def automate_function(
             if parameters is None:
                 continue
 
-            parameter_names = parameters.get_dynamic_member_names()
+            parameter_keys = parameters.get_dynamic_member_names()
 
-            for parameter_name in parameter_names:
-                if parameter_name.startswith(
+            for parameter_key in parameter_keys:
+                parameter = cast(Base, parameters.__getitem__(f"{parameter_key}"))
+
+                if not parameter.of_type("Objects.BuiltElements.Revit.Parameter"):
+                    continue
+
+                if parameter["name"].startswith(
                         function_inputs.forbidden_parameter_prefix
                 ):
                     # Base objects doesn't support the delitem method
-                    parameters.__dict__.pop(parameter_name)
+                    parameters.__dict__.pop(parameter_key)
 
                     # update the list of parameters cleansed from the current object
                     # by updating the cleansed_objects dict
                     if current.id in cleansed_objects:
-                        cleansed_objects[current.id].append(parameter_name)
+                        cleansed_objects[current.id].append(parameter_key)
                     else:
-                        cleansed_objects[current.id] = [parameter_name]
+                        cleansed_objects[current.id] = [parameter_key]
 
     # if no objects were cleansed, we can just return an automate context report of run success
 
