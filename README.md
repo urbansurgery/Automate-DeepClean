@@ -1,3 +1,5 @@
+[![build and deploy Speckle functions](https://github.com/urbansurgery/Automate-DeepClean/actions/workflows/main.yml/badge.svg)](https://github.com/urbansurgery/Automate-DeepClean/actions/workflows/main.yml)
+
 # Speckle Automate Function: Data Validation in AEC
 
 This repository provides a Speckle Automate function crafted specifically for the AEC industry, demonstrating the power
