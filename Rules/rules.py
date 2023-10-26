@@ -21,35 +21,20 @@ class ParameterRules:
     @staticmethod
     def speckle_type_rule(desired_type: str) -> Callable[[Base], bool]:
         """
-        Generates a rule to check if a parameter's speckle_type matches the desired type.
-
-        Args:
-            desired_type (str): The desired speckle_type as a string (e.g., "Objects.Geometry.Line").
-
-        Returns:
-            Callable[[Base], bool]: A lambda function that takes a parameter
-                                    (of type Base) and returns True if the
-                                    parameter's speckle_type matches the desired type,
-                                    and False otherwise.
+        Rule: Check if a parameter's speckle_type matches the desired type.
         """
         return lambda parameter: getattr(parameter, "speckle_type", None) == desired_type
 
     @staticmethod
-    def forbidden_prefix_rule(forbidden_prefix: str) -> Callable[[Base], bool]:
+    def forbidden_prefix_rule(given_prefix: str) -> Callable[[Base], bool]:
         """
-        Generates a rule to check if a parameter's name starts with a
-        forbidden prefix.
+        Rule: check if a parameter's name starts with a given prefix.
 
-        Args:
-            forbidden_prefix (str): The prefix string we want to check against.
-
-        Returns:
-            Callable[[Base], bool]: A lambda function that takes a parameter
-                                    (of type Base) and returns True if the
-                                    parameter's name starts with the forbidden
-                                    prefix, and False otherwise.
+        This is a simple check, but there could be more complex naming rules for parameters of
+        different types. For example, a rule that checks if a parameter's name starts with a given string
+        exists particularly within IFC where parameters are often prefixed with "Ifc" or "Pset".
         """
-        return lambda parameter: parameter.name.startswith(forbidden_prefix)
+        return lambda parameter: parameter.name.startswith(given_prefix)
 
     # This example Automate function is for prefixed parameter removal. Additional example rules below follow the same
     # pattern, but with different logic. In some instances there is a strong coupling between the action and the checking
