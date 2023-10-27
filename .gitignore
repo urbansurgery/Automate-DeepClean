@@ -311,3 +311,4 @@ pyrightconfig.json
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python,pycharm
+/.idea/git_toolbox_prj.xml
