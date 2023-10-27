@@ -10,6 +10,7 @@ from Rules.rules import ParameterRules
 # Our main goal is to define actions that can be taken on parameters.
 # We'll start by creating a base class that all specific actions will inherit from.
 
+
 class ParameterAction(ABC):
     """
     Base class for actions on parameters.
@@ -40,6 +41,7 @@ class ParameterAction(ABC):
 # Now, let's create a specific action. In this example, we're removing parameters
 # that start with a specific prefix.
 
+
 class PrefixRemovalAction(ParameterAction):
     """
     Action to remove parameters with a specific prefix.
@@ -50,7 +52,9 @@ class PrefixRemovalAction(ParameterAction):
         # The prefix we want to remove
         self.forbidden_prefix: str = forbidden_prefix
 
-    def apply(self, parameter: Union[Base, Dict[str, Any]], parent_object: Base) -> None:
+    def apply(
+        self, parameter: Union[Base, Dict[str, Any]], parent_object: Base
+    ) -> None:
         """
         Remove the parameter if its name starts with the forbidden prefix.
         This function demonstrates the complexities of navigating and modifying
@@ -74,16 +78,16 @@ class PrefixRemovalAction(ParameterAction):
 
         # If the parameter's parent object is a Base type, we can use the `__dict__` method
         # to access its underlying dictionary representation.
-        if isinstance(parent_object['parameters'], Base):
+        if isinstance(parent_object["parameters"], Base):
             try:
                 # Retrieve the unique GUID which corresponds to the parameter's key in the parent object.
                 application_name = parameter.__getitem__("applicationInternalName")
 
                 # Check if the GUID exists as a key in the parent object's parameters.
                 # If it does, remove that parameter from the dictionary.
-                if application_name in parent_object['parameters'].__dict__:
-                    parent_object['parameters'].__dict__.pop(application_name)
-                    self.affected_parameters[parent_object['id']].append(param_name)
+                if application_name in parent_object["parameters"].__dict__:
+                    parent_object["parameters"].__dict__.pop(application_name)
+                    self.affected_parameters[parent_object["id"]].append(param_name)
 
             except KeyError:
                 pass
@@ -104,8 +108,7 @@ class PrefixRemovalAction(ParameterAction):
 
         # Summarize the names of all removed parameters
         removed_params = set(
-            param for params in self.affected_parameters.values()
-            for param in params
+            param for params in self.affected_parameters.values() for param in params
         )
 
         message = f"The following parameters were removed: {', '.join(removed_params)}"
@@ -114,7 +117,7 @@ class PrefixRemovalAction(ParameterAction):
         automate_context.attach_info_to_objects(
             category="Removed_Parameters",
             object_ids=list(self.affected_parameters.keys()),
-            message=message
+            message=message,
         )
 
 
@@ -137,13 +140,12 @@ class MissingValueReportAction(ParameterAction):
         if ParameterRules.has_missing_value(parameter):
             # If missing, add the parameter's name to our affected_parameters dictionary
             # The key is the parent object's ID for easy lookup later
-            self.affected_parameters[parent_object['id']].append(parameter["name"])
+            self.affected_parameters[parent_object["id"]].append(parameter["name"])
 
     def report(self, automate_context: AutomationContext) -> None:
         # Construct a set of unique parameter names that have missing values
         missing_value_params = set(
-            param for params in self.affected_parameters.values()
-            for param in params
+            param for params in self.affected_parameters.values() for param in params
         )
 
         # Formulate a message summarizing the missing parameters
@@ -153,7 +155,7 @@ class MissingValueReportAction(ParameterAction):
         automate_context.attach_info_to_objects(
             category="Missing_Values",
             object_ids=list(self.affected_parameters.keys()),
-            message=message
+            message=message,
         )
 
 
@@ -174,16 +176,15 @@ class DefaultValueMutationAction(ParameterAction):
         # Check if the parameter has a default value
         if ParameterRules.has_default_value(parameter):
             # If it does, update its value with the new specified value
-            parameter['value'] = self.new_value  # Mutate the parameter value
+            parameter["value"] = self.new_value  # Mutate the parameter value
 
             # Record the parameter's name in our affected_parameters dictionary
-            self.affected_parameters[parent_object['id']].append(parameter["name"])
+            self.affected_parameters[parent_object["id"]].append(parameter["name"])
 
     def report(self, automate_context: AutomationContext) -> None:
         # Construct a set of unique parameter names that were mutated
         mutated_params = set(
-            param for params in self.affected_parameters.values()
-            for param in params
+            param for params in self.affected_parameters.values() for param in params
         )
 
         # Formulate a message summarizing the mutated parameters
@@ -193,5 +194,5 @@ class DefaultValueMutationAction(ParameterAction):
         automate_context.attach_info_to_objects(
             category="Updated_Defaults",
             object_ids=list(self.affected_parameters.keys()),
-            message=message
+            message=message,
         )

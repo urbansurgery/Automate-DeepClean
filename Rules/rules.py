@@ -8,6 +8,7 @@ from specklepy.objects import Base
 # process parameters in our Speckle objects. These rules will be encapsulated
 # in a class called `ParameterRules`.
 
+
 class ParameterRules:
     """
     A collection of rules for processing parameters in Speckle objects.
@@ -23,7 +24,9 @@ class ParameterRules:
         """
         Rule: Check if a parameter's speckle_type matches the desired type.
         """
-        return lambda parameter: getattr(parameter, "speckle_type", None) == desired_type
+        return (
+            lambda parameter: getattr(parameter, "speckle_type", None) == desired_type
+        )
 
     @staticmethod
     def forbidden_prefix_rule(given_prefix: str) -> Callable[[Base], bool]:
@@ -50,7 +53,7 @@ class ParameterRules:
         This rule checks if a parameter is missing its value, potentially indicating
         an oversight during data entry or transfer.
         """
-        return not parameter.get('value')
+        return not parameter.get("value")
 
     @staticmethod
     def has_default_value(parameter: Dict[str, str]) -> bool:
@@ -61,7 +64,7 @@ class ParameterRules:
         This rule identifies parameters that still have their default values, helping
         to highlight areas where real, meaningful values need to be provided.
         """
-        return parameter.get('value') == "Default"
+        return parameter.get("value") == "Default"
 
     @staticmethod
     def parameter_exists(parameter_name: str, parent_object: Dict[str, str]) -> bool:
@@ -72,4 +75,4 @@ class ParameterRules:
         This rule verifies if a specific parameter exists within an object, allowing
         teams to ensure that key data points are always present.
         """
-        return parameter_name in parent_object.get('parameters', {})
+        return parameter_name in parent_object.get("parameters", {})

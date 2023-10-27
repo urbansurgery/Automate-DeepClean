@@ -11,10 +11,10 @@ from speckle_automate import (
     execute_automate_function,
 )
 from specklepy.objects import Base
-from specklepy.objects.graph_traversal.traversal import TraversalRule, GraphTraversal
 
-from Rules.actions import ParameterAction, PrefixRemovalAction, MissingValueReportAction
+from Rules.actions import PrefixRemovalAction
 from Rules.rules import ParameterRules
+from Rules.traversal import get_data_traversal_rules
 
 
 class FunctionInputs(AutomateBase):
@@ -54,12 +54,16 @@ def automate_function(
     version_root_object = automate_context.receive_version()
 
     # Traverse the received Speckle data.
-    speckle_data = get_data_traversal()
+    speckle_data = get_data_traversal_rules()
     traversal_contexts_collection = speckle_data.traverse(version_root_object)
 
     # Checking rules
-    is_revit_parameter = ParameterRules.speckle_type_rule("Objects.BuiltElements.Revit.Parameter")
-    has_forbidden_prefix = ParameterRules.forbidden_prefix_rule(function_inputs.forbidden_parameter_prefix)
+    is_revit_parameter = ParameterRules.speckle_type_rule(
+        "Objects.BuiltElements.Revit.Parameter"
+    )
+    has_forbidden_prefix = ParameterRules.forbidden_prefix_rule(
+        function_inputs.forbidden_parameter_prefix
+    )
 
     # Actions
     removal_action = PrefixRemovalAction(function_inputs.forbidden_parameter_prefix)
@@ -100,8 +104,9 @@ def automate_function(
     for action in [removal_action]:
         action.report(automate_context)
 
-    new_version_id = automate_context.create_new_version_in_project(version_root_object, "cleansed",
-                                                                    "Cleansed Parameters")
+    new_version_id = automate_context.create_new_version_in_project(
+        version_root_object, "cleansed", "Cleansed Parameters"
+    )
 
     if not new_version_id:
         automate_context.mark_run_failed("Failed to create a new version.")
@@ -109,32 +114,6 @@ def automate_function(
 
     # Final summary.
     automate_context.mark_run_success("Actions applied and reports generated.")
-
-
-def get_data_traversal() -> GraphTraversal:
-    """
-    This function is responsible for navigating through the Speckle data
-    hierarchy and providing contexts to be checked and acted upon.
-    """
-    display_value_property_aliases = {"displayValue", "@displayValue"}
-    elements_property_aliases = {"elements", "@elements"}
-
-    display_value_rule = TraversalRule(
-        [
-            lambda o: any(
-                getattr(o, alias, None) for alias in display_value_property_aliases
-            ),
-            lambda o: "Geometry" in o.speckle_type,
-        ],
-        lambda o: elements_property_aliases,
-    )
-
-    default_rule = TraversalRule(
-        [lambda _: True],
-        lambda o: o.get_member_names(),  # TODO: avoid deprecated members
-    )
-
-    return GraphTraversal([display_value_rule, default_rule])
 
 
 # make sure to call the function with the executor
