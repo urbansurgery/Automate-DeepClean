@@ -13,10 +13,11 @@ from specklepy.transports.server import ServerTransport
 # Setting up some pytest fixtures for testing
 # Fixtures are a way to provide consistent test data or configuration for each test
 
+
 @pytest.fixture()
 def speckle_token(request) -> str:
     """Get the Speckle token from test configuration.
-       These variables may be in a `.env` file or as secrets in your CI/CD pipeline."""
+    These variables may be in a `.env` file or as secrets in your CI/CD pipeline."""
     return request.config.SPECKLE_TOKEN
 
 

@@ -34,8 +34,8 @@ class FunctionInputs(AutomateBase):
 
 
 def automate_function(
-        automate_context: AutomationContext,
-        function_inputs: FunctionInputs,
+    automate_context: AutomationContext,
+    function_inputs: FunctionInputs,
 ) -> None:
     """
     Main function for the Speckle Automation.

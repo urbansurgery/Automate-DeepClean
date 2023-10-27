@@ -24,12 +24,12 @@ def crypto_random_string(length: int) -> str:
 
 
 def register_new_automation(
-        project_id: str,
-        model_id: str,
-        speckle_client: SpeckleClient,
-        automation_id: str,
-        automation_name: str,
-        automation_revision_id: str,
+    project_id: str,
+    model_id: str,
+    speckle_client: SpeckleClient,
+    automation_id: str,
+    automation_name: str,
+    automation_revision_id: str,
 ):
     """Register a new automation in the speckle server."""
     query = gql(
@@ -124,24 +124,20 @@ def fake_automation_run_data(request, test_client: SpeckleClient) -> AutomationR
         branch_name="main",
         version_id="3e4e274c56",
         speckle_server_url=SERVER_URL,
-
         # These ids would be available with a valid registered Automation definition.
         automation_id=automation_id,
         automation_revision_id=automation_revision_id,
         automation_run_id=crypto_random_string(12),
-
         # These ids would be available with a valid registered Function definition. Can also be faked.
         function_id="12345",
         function_name=function_name,
-        function_logo=None
+        function_logo=None,
     )
 
     return fake_run_data
 
 
-def test_function_run(
-        fake_automation_run_data: AutomationRunData, speckle_token: str
-):
+def test_function_run(fake_automation_run_data: AutomationRunData, speckle_token: str):
     """Run an integration test for the automate function."""
     context = AutomationContext.initialize(fake_automation_run_data, speckle_token)
 
