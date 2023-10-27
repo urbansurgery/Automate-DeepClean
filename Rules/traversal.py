@@ -43,7 +43,7 @@ def get_data_traversal_rules() -> GraphTraversal:
 
     default_rule = TraversalRule(
         [lambda _: True],
-        lambda o: o.get_member_names(),  # TODO: avoid deprecated members
+        lambda o: o.get_member_names(),
     )
 
     return GraphTraversal([display_value_rule, default_rule])
