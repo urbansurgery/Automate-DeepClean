@@ -53,30 +53,44 @@ class PrefixRemovalAction(ParameterAction):
     def apply(self, parameter: Union[Base, Dict[str, Any]], parent_object: Base) -> None:
         """
         Remove the parameter if its name starts with the forbidden prefix.
-        """
-        # If parameter is of type Base, access its attributes using dot notation.
-        # If parameter is a dictionary, access its values using the key.
-        param_name = parameter["name"]
+        This function demonstrates the complexities of navigating and modifying
+        the structure of Revit parameters in Speckle's data model.
 
+        In Revit, custom parameters are stored with a GUID as the key, which means
+        we cannot predict the exact key ahead of time. Instead, we have to traverse
+        through the parameters and match them by another attribute, in this case,
+        the `applicationInternalName`.
+        """
+
+        # Extract the parameter name. If the parameter doesn't have a name or if the
+        # name doesn't start with the forbidden prefix, exit the function early.
+        param_name = parameter["name"]
         if not param_name or not param_name.startswith(self.forbidden_prefix):
             return
 
-        if param_name.startswith(self.forbidden_prefix):
-            # If the parameter's name starts with the forbidden prefix, remove it
-            if isinstance(parent_object['parameters'], Base):
-                # double-check the parent object's parameters contain the parameter by applicationInternalName
-                try:
-                    application_name = parameter.__getitem__("applicationInternalName")
+        # The parameters in parent_object are stored in a dictionary-like structure
+        # where the key is a GUID (applicationInternalName). We need to safely
+        # access this key without causing a KeyError.
 
-                    # Check if the application name exists in the parent object's parameters dictionary
-                    if application_name in parent_object['parameters'].__dict__:
-                        parent_object['parameters'].__dict__.pop(application_name)
-                except KeyError:
-                    # Handle the key not existing, if necessary
-                    pass
+        # If the parameter's parent object is a Base type, we can use the `__dict__` method
+        # to access its underlying dictionary representation.
+        if isinstance(parent_object['parameters'], Base):
+            try:
+                # Retrieve the unique GUID which corresponds to the parameter's key in the parent object.
+                application_name = parameter.__getitem__("applicationInternalName")
 
-            # Record this removal in our affected_parameters dictionary
-            self.affected_parameters[parent_object['id']].append(param_name)
+                # Check if the GUID exists as a key in the parent object's parameters.
+                # If it does, remove that parameter from the dictionary.
+                if application_name in parent_object['parameters'].__dict__:
+                    parent_object['parameters'].__dict__.pop(application_name)
+                    self.affected_parameters[parent_object['id']].append(param_name)
+
+            except KeyError:
+                pass
+                # This block will execute if the `applicationInternalName` key is not found in parameter.
+                # In this example, we're simply passing over this exception, but more specific error
+                # handling can be implemented if needed.
+                # Record this removal in our affected_parameters dictionary
 
     def report(self, automate_context: AutomationContext) -> None:
         """
