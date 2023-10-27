@@ -64,6 +64,8 @@ def automate_function(
     # Actions
     removal_action = PrefixRemovalAction(function_inputs.forbidden_parameter_prefix)
 
+    cleansed_objects = set()
+
     # Iterate over each context in the traversal contexts collection.
     # Each context represents an object (or a nested part of an object) within
     # the data structure that was traversed.
@@ -82,10 +84,28 @@ def automate_function(
 
                 if is_revit_parameter(parameter) and has_forbidden_prefix(parameter):
                     removal_action.apply(parameter, current_object)
+                    if current_object.id not in cleansed_objects:
+                        cleansed_objects.add(current_object.id)
+
+    # check the affected objects of all actions and count them
+    affected_objects = set()
+    for action in [removal_action]:
+        affected_objects.update(action.affected_parameters)
+
+    if not affected_objects or len(affected_objects) == 0:
+        automate_context.mark_run_success("No parameters were removed.")
+        return
 
     # Generate reports for all actions.
     for action in [removal_action]:
         action.report(automate_context)
+
+    new_version_id = automate_context.create_new_version_in_project(version_root_object, "cleansed",
+                                                                    "Cleansed Parameters")
+
+    if not new_version_id:
+        automate_context.mark_run_failed("Failed to create a new version.")
+        return
 
     # Final summary.
     automate_context.mark_run_success("Actions applied and reports generated.")

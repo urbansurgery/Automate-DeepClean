@@ -64,7 +64,9 @@ class PrefixRemovalAction(ParameterAction):
         if param_name.startswith(self.forbidden_prefix):
             # If the parameter's name starts with the forbidden prefix, remove it
             if isinstance(parent_object['parameters'], Base):
-                parent_object['parameters'].__dict__.pop(param_name)
+                # double-check the parent object's parameters contain the parameter by applicationInternalName
+                if parameter.get("applicationInternalName") in parent_object['parameters'].__dict__:
+                    parent_object['parameters'].__dict__.pop(parameter["applicationInternalName"])
 
             # Record this removal in our affected_parameters dictionary
             self.affected_parameters[parent_object['id']].append(param_name)
